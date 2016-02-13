@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Montitoring with sensu</title>
+<meta name="author" content="(Karim Memon)"/>
+<meta name="description" content=""/>
+<meta name="keywords" content=""/>
+<link rel="stylesheet" href="http://cdn.jsdelivr.net/reveal.js/3.0.0/css/reveal.css"/>
+<link rel="stylesheet" href="http://cdn.jsdelivr.net/reveal.js/3.0.0/css/theme/white.css" id="theme"/>
+<link rel="stylesheet" href=""/>
+<!-- If the query includes 'print-pdf', include the PDF print sheet -->
+<script>
+    if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'http://cdn.jsdelivr.net/reveal.js/3.0.0/css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+    }
+</script>
+<meta name="description" content="Making sense with sensu">
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+<section id="sec-title-slide">
+<h1>Montitoring with sensu</h1>
+<h2>Karim Memon</h2>
+<h2><a href="mailto:abdulkarim@olacabs.com">abdulkarim@olacabs.com</a></h2>
+<h2>2016-02-13 Thu</h2>
+</section>
+<section id="table-of-contents">
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#/slide-orgheadline3">Demo</a></li>
+<li><a href="#/slide-orgheadline6">Sensu and all</a></li>
+<li><a href="#/slide-orgheadline14">Core sensu components</a></li>
+<li><a href="#/slide-orgheadline22">Checks</a></li>
+<li><a href="#/slide-orgheadline25">Handlers</a></li>
+<li><a href="#/slide-orgheadline26">from.here()</a></li>
+</ul>
+</div>
+</div>
+</section>
+
+<section>
+<section id="slide-orgheadline3">
+<h2 id="orgheadline3">Demo</h2>
+<aside class="notes">
+<p>
+echo '{ "name": "my<sub>check</sub>", "output": "some output", "status": 0 }' &gt; /dev/tcp/localhost/3030
+wget -O /etc/sensu/plugins/check-procs.rb <a href="https://raw.githubusercontent.com/sensu-plugins/sensu-plugins-process-checks/master/bin/check-process.rb">https://raw.githubusercontent.com/sensu-plugins/sensu-plugins-process-checks/master/bin/check-process.rb</a>
+</p>
+
+</aside>
+<ul>
+<li class="fragment appear">Vagrant
+<a href="https://www.vagrantup.com/downloads.html">https://www.vagrantup.com/downloads.html</a></li>
+
+</ul>
+</section>
+<section id="slide-orgheadline1">
+<h4 id="orgheadline1"><a href="https://github.com/sensu/sensu-puppet">Your own sensu</a></h4>
+<div class="org-src-container">
+
+<pre  class="src src-sh">$ git clone https://github.com/sensu/sensu-puppet.git 
+$ vagrant up
+$ vagrant status
+$ vagrant ssh sensu-server
+</pre>
+</div>
+
+</section>
+<section id="slide-orgheadline2">
+<h4 id="orgheadline2">Go figure!</h4>
+<ul>
+<li>sensu-server.example.com:3000</li>
+<li>username =&gt; uchiwa</li>
+<li>password =&gt; uchiwa</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline6">
+<h2 id="orgheadline6"><a href="https://sensuapp.org/docs/latest/overview">Sensu and all</a></h2>
+<div class="outline-text-2" id="text-orgheadline6">
+</div></section>
+<section id="slide-orgheadline4">
+<h4 id="orgheadline4">Overview</h4>
+<ul>
+<li>To <b>Monitor</b> servers, services, application health, and business KPIs</li>
+<li>Send <b>alerts</b> and <b>notifications</b></li>
+<li><b>Dynamic</b> client registration &amp; de-registration</li>
+<li>A simple yet <b>extensible</b> model for monitoring</li>
+<li>Designed for <b>automation</b> (json)</li>
+<li><b>Open source</b> software with commercial support</li>
+
+</ul>
+</section>
+<section id="slide-orgheadline5">
+<h4 id="orgheadline5">Community</h4>
+<ul>
+<li><a href="https://github.com/sensu/sensu">Sensu on Github</a></li>
+<li><a href="https://github.com/sensu-plugins">Sensu-plugins</a></li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline14">
+<h2 id="orgheadline14">Core sensu components</h2>
+<div class="outline-text-2" id="text-orgheadline14">
+</div></section>
+<section id="slide-orgheadline7">
+<h4 id="orgheadline7"><a href="https://sensuapp.org/docs/latest/architecture">Architecture</a></h4>
+
+<div class="figure">
+<p><img src="https://sensuapp.org/docs/latest/img/sensu-diagram-87a902f0.gif" alt="sensu-diagram-87a902f0.gif" />
+</p>
+</div>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline8">
+<h3 id="orgheadline8"><a href="https://sensuapp.org/docs/latest/configuration">Server</a></h3>
+<ul>
+<li>event processor</li>
+<li>built-in leader election to avoid scheduling conflict</li>
+<li>round-robin load balancing</li>
+<li>Process check results</li>
+<li>maintain state in redis (aggregate)</li>
+
+</ul>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline9">
+<h3 id="orgheadline9"><a href="https://sensuapp.org/docs/latest/clients">Client</a></h3>
+<ul>
+<li>dynamic self-registration</li>
+<li>client subscriptions</li>
+<li>local check execution scheduler</li>
+<li>input socket for accepting input from external services</li>
+
+</ul>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline10">
+<h3 id="orgheadline10"><a href="https://sensuapp.org/docs/latest/transport">Transport</a></h3>
+<ul>
+<li>RabbitMQ</li>
+<li>Redis</li>
+
+</ul>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline12">
+<h3 id="orgheadline12"><a href="https://sensuapp.org/docs/latest/api-overview">API</a></h3>
+<aside class="notes">
+<p>
+<a href="http://sensu-server.example.com:4567/clients">http://sensu-server.example.com:4567/clients</a>
+<a href="http://sensu-server.exaple.com:4567/clients/sensu-client.example.com">http://sensu-server.exaple.com:4567/clients/sensu-client.example.com</a>
+</p>
+
+</aside>
+<ul>
+<li>Adding/removing clients</li>
+<li>Access check configuration data and publishing check requests</li>
+<li>Accessing event data and resolving events</li>
+<li>Accessing check result data and publishing check results</li>
+<li>An Aggregates API for accessing aggregated check result data and deleting aggregate data</li>
+<li>A Stashes API for providing read/write access to Redis’ underlying key-value functionality</li>
+
+</ul>
+</section>
+<section id="slide-orgheadline11">
+<h4 id="orgheadline11"><a href="https://sensuapp.org/docs/latest/install-a-dashboard">Dashboard (Not a core component)</a></h4>
+<ul>
+<li class="fragment grow">sensu-admin (discontinued)</li>
+<li class="fragment grow">uchiwa</li>
+
+</ul>
+</section>
+</section>
+<section>
+<section id="slide-orgheadline13">
+<h3 id="orgheadline13"><a href="https://sensuapp.org/docs/latest/architecture">The Sensu Monitoring Flow</a></h3>
+<ul>
+<li>A <b>Check Request</b> is scheduled/published by the <b>Sensu Server</b> or a <b>Sensu Client</b></li>
+<li>The <b>Sensu Client</b> executes a <b>Service Check</b></li>
+<li><b>Service Checks</b> emit status information as <b>Check Results</b></li>
+<li><b>Check Results</b> are published by the Sensu Client to the <b>Sensu Transport</b></li>
+<li>The <b>Sensu Server</b> processes Check Results, persisting a copy of the latest result in the Data Store</li>
+<li>The <b>Sensu Server</b> processes the Event by executing one or more <b>Event Handlers</b></li>
+<li>The <b>Sensu Server</b> executes the <b>Event Handler</b></li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline22">
+<h2 id="orgheadline22"><a href="https://sensuapp.org/docs/latest/checks">Checks</a></h2>
+<p class="fragment (grow )">
+Sensu checks allow you to monitor services or measure resources, they are executed on machines running the Sensu client.
+</p>
+</section>
+<section id="slide-orgheadline15">
+<h4 id="orgheadline15">Definition</h4>
+<div class="org-src-container">
+
+<pre  class="src src-ruby"><span style="color: #4f97d7;">{</span>
+  <span style="color: #2d9574;">"checks"</span>: <span style="color: #bc6ec5;">{</span>
+    <span style="color: #2d9574;">"web_application_api"</span>: <span style="color: #2d9574;">{</span>
+      <span style="color: #2d9574;">"command"</span>: <span style="color: #2d9574;">"check-http.rb -u http://localhost/health-check"</span>,
+      <span style="color: #2d9574;">"subscribers"</span>: <span style="color: #67b11d;">[</span>
+        <span style="color: #2d9574;">"webserver"</span>
+      <span style="color: #67b11d;">]</span>,
+      <span style="color: #2d9574;">"interval"</span>: <span style="color: #a45bad;">20</span>
+      <span style="color: #2d9574;">"standalone"</span>: <span style="color: #a45bad;">false</span>
+    <span style="color: #2d9574;">}</span>
+  <span style="color: #bc6ec5;">}</span>
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+</section>
+<section id="slide-orgheadline16">
+<h4 id="orgheadline16">NTP check</h4>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #4f97d7;">{</span>
+<span style="color: #2d9574;">"checks"</span>: <span style="color: #bc6ec5;">{</span>
+<span style="color: #2d9574;">"ntp"</span>: <span style="color: #2d9574;">{</span>
+<span style="color: #2d9574;">"command"</span>: <span style="color: #2d9574;">"/usr/share/ola/sensu/plugins/system/check-ntp.rb -c 100 -w50 "</span>,
+<span style="color: #2d9574;">"handlers"</span>: <span style="color: #67b11d;">[</span>
+<span style="color: #2d9574;">"default"</span>
+<span style="color: #67b11d;">]</span>,
+<span style="color: #2d9574;">"interval"</span>: <span style="color: #a45bad;">60</span>,
+<span style="color: #2d9574;">"subscribers"</span>: <span style="color: #67b11d;">[</span>
+<span style="color: #2d9574;">"base"</span>
+<span style="color: #67b11d;">]</span>,
+<span style="color: #2d9574;">"standalone"</span>: false
+<span style="color: #2d9574;">}</span>
+<span style="color: #bc6ec5;">}</span>
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+</section>
+<section id="slide-orgheadline17">
+<h4 id="orgheadline17">Metric check</h4>
+<div class="org-src-container">
+
+<pre  class="src src-js"><span style="color: #4f97d7;">{</span>
+<span style="color: #2d9574;">"checks"</span>: <span style="color: #bc6ec5;">{</span>
+<span style="color: #2d9574;">"cpu_metrics"</span>: <span style="color: #2d9574;">{</span>
+<span style="color: #2d9574;">"type"</span>: <span style="color: #2d9574;">"metric"</span>,
+<span style="color: #2d9574;">"command"</span>: <span style="color: #2d9574;">"metrics-cpu.rb"</span>,
+<span style="color: #2d9574;">"subscribers"</span>: <span style="color: #67b11d;">[</span>
+<span style="color: #2d9574;">"production"</span>
+<span style="color: #67b11d;">]</span>,
+<span style="color: #2d9574;">"interval"</span>: <span style="color: #a45bad;">10</span>,
+<span style="color: #2d9574;">"handler"</span>: <span style="color: #2d9574;">"graylog"</span>
+<span style="color: #2d9574;">}</span>
+<span style="color: #bc6ec5;">}</span>
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+</section>
+<section id="slide-orgheadline18">
+<h4 id="orgheadline18">Standalone check&#x2026;</h4>
+<div class="org-src-container">
+
+<pre  class="src src-ruby"><span style="color: #2d9574;">'uchiwa'</span>: <span style="color: #4f97d7;">{</span>
+  <span style="color: #4f97d7;">include</span> ola-sensu::uchiwa
+  <span style="color: #4f97d7;">include</span> ola-sensu::checks::uchiwa
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+
+</section>
+<section id="slide-orgheadline19">
+<h4 id="orgheadline19">Check pushed from puppet</h4>
+<div class="org-src-container">
+
+<pre  class="src src-ruby">sensu::check <span style="color: #4f97d7;">{</span> <span style="color: #2d9574;">'check_ntp'</span>:
+  command     =&gt; <span style="color: #2d9574;">'PATH=$PATH:/usr/lib/nagios/plugins check_ntp_time -H pool.ntp.org -w 30 -c 60'</span>,
+  handlers    =&gt; <span style="color: #2d9574;">'email, opsgenie'</span>,
+  subscribers =&gt; <span style="color: #2d9574;">'sensu-test'</span>
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+</section>
+<section id="slide-orgheadline20">
+<h4 id="orgheadline20">Power!</h4>
+<div class="org-src-container">
+
+<pre  class="src src-js">echo <span style="color: #2d9574;">'{ "name": "my_check", "output": "some output", "status": 0 }'</span> &gt; /dev/tcp/localhost/<span style="color: #a45bad;">3030</span>
+</pre>
+</div>
+</section>
+<section id="slide-orgheadline21">
+<h4 id="orgheadline21">Write your own plugin</h4>
+<div class="org-src-container">
+
+<pre  class="src src-ruby"><span style="color: #2aa1ae; background-color: #292e34;">#</span><span style="color: #2aa1ae; background-color: #292e34;">!/usr/bin/env ruby</span>
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">FILE_NAME check_proc.rb</span>
+
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">get the current list of processes</span>
+processes = <span style="color: #2d9574;">`ps aux`</span>
+
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">determine if the resque process is running</span>
+running = processes.lines.detect <span style="color: #4f97d7; font-weight: bold;">do</span> |process|
+  process.include?<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'resque-pool'</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7; font-weight: bold;">end</span>
+
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">return appropriate check output and exit status code</span>
+<span style="color: #4f97d7; font-weight: bold;">if</span> running
+  <span style="color: #4f97d7;">puts</span> <span style="color: #2d9574;">'OK - Resque process is running'</span>
+  <span style="color: #4f97d7;">exit</span> <span style="color: #a45bad;">0</span>
+<span style="color: #4f97d7; font-weight: bold;">else</span>
+  <span style="color: #4f97d7;">puts</span> <span style="color: #2d9574;">'WARNING - Resque process is NOT running'</span>
+  <span style="color: #4f97d7;">exit</span> <span style="color: #a45bad;">1</span>
+<span style="color: #4f97d7; font-weight: bold;">end</span>
+
+<span style="color: #2aa1ae; background-color: #292e34;">#</span><span style="color: #2aa1ae; background-color: #292e34;">status codes: 0 =&gt; OK, 1 =&gt; WARNING, 2 =&gt; CRITICAL, and 3+ =&gt; UNKNOWN or CUSTOM</span>
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline25">
+<h2 id="orgheadline25"><a href="https://sensuapp.org/docs/latest/handlers">Handlers</a></h2>
+<p class="fragment (grow)">
+Sensu event handlers are for taking action on events 
+</p>
+</section>
+<section id="slide-orgheadline23">
+<h4 id="orgheadline23">Definition</h4>
+<p class="fragment (grow)">
+A definition declares how a Sensu handler is executed
+</p>
+<div class="org-src-container">
+
+<pre  class="src src-js"><span style="color: #4f97d7;">{</span>
+  <span style="color: #2d9574;">"handlers"</span>: <span style="color: #bc6ec5;">{</span>
+    <span style="color: #2d9574;">"mail"</span>: <span style="color: #2d9574;">{</span>
+      <span style="color: #2d9574;">"type"</span>: <span style="color: #2d9574;">"pipe"</span>,
+      <span style="color: #2d9574;">"command"</span>: <span style="color: #2d9574;">"mailx -s 'Where is God?' god@example.com"</span>
+    <span style="color: #2d9574;">}</span>
+  <span style="color: #bc6ec5;">}</span>
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+
+</section>
+<section id="slide-orgheadline24">
+<h4 id="orgheadline24">Handler types</h4>
+<ul>
+<li><b>Pipe handlers</b> execute a command and pass the event data to the created process via STDIN.</li>
+<li><b>TCP and UDP</b> handlers send the event data to a remote socket.</li>
+<li><b>Transport</b> handlers publish the event data to the Sensu transport</li>
+<li><b>Set</b> handlers are used to group event handlers</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline26">
+<h2 id="orgheadline26">from.here()</h2>
+<ul>
+<li><a href="https://sensuapp.org/docs/latest/overview">Sensu documentation</a></li>
+<li class="fragment appear">Follow me on <a href="https://twitter.com/abdulkarim_me">twitter</a> <a href="https://github.com/techmaniack">Github</a></li>
+
+</ul>
+</section>
+</section>
+</div>
+</div>
+<p> Created by Karim. </p>
+<script src="http://cdn.jsdelivr.net/reveal.js/3.0.0/lib/js/head.min.js"></script>
+<script src="http://cdn.jsdelivr.net/reveal.js/3.0.0/js/reveal.js"></script>
+
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+
+controls: true,
+progress: true,
+history: false,
+center: true,
+slideNumber: true,
+rollingLinks: true,
+keyboard: true,
+overview: true,
+width: 1200,
+height: 800,
+margin: 0.10,
+minScale: 0.50,
+maxScale: 2.50,
+
+theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+transition: Reveal.getQueryHash().transition || 'cube', // default/cube/page/concave/zoom/linear/fade/none
+transitionSpeed: 'default',
+multiplex: {
+    secret: '', // null if client
+    id: '', // id, obtained from socket.io server
+    url: '' // Location of socket.io server
+},
+
+// Optional libraries used to extend on reveal.js
+dependencies: [
+ { src: 'http://cdn.jsdelivr.net/reveal.js/3.0.0/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: 'http://cdn.jsdelivr.net/reveal.js/3.0.0/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: 'http://cdn.jsdelivr.net/reveal.js/3.0.0/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }]
+});
+</script>
+</body>
+</html>

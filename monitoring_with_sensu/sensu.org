@@ -1,0 +1,263 @@
+#+TITLE:     Montitoring with sensu
+#+AUTHOR:    Karim Memon
+#+EMAIL:     abdulkarim@olacabs.com
+#+DATE:      2016-02-13 Thu
+#+DESCRIPTION:
+#+KEYWORDS:
+#+LANGUAGE:  en
+#+OPTIONS:   H:3 num:t toc:t \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS:   TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc
+#+INFOJS_OPT: view:nil toc:nil ltoc:t mouse:underline buttons:0 path:http://orgmode.org/org-info.js
+#+EXPORT_SELECT_TAGS: export
+#+EXPORT_EXCLUDE_TAGS: noexport
+#+LINK_UP:
+#+LINK_HOME:
+#+OPTIONS: reveal_center:t reveal_progress:t reveal_history:nil reveal_control:t
+#+OPTIONS: reveal_mathjax:t reveal_rolling_links:t reveal_keyboard:t reveal_overview:t num:nil
+#+OPTIONS: reveal_width:1200 reveal_height:800
+#+OPTIONS: toc:1
+#+REVEAL_MARGIN: 0.1
+#+REVEAL_MIN_SCALE: 0.5
+#+REVEAL_MAX_SCALE: 2.5
+#+REVEAL_TRANS: cube
+#+REVEAL_THEME: white
+#+REVEAL_HLEVEL: 2
+#+REVEAL_HEAD_PREAMBLE: <meta name="description" content="Making sense with sensu">
+#+REVEAL_POSTAMBLE: <p> Created by Karim. </p>
+#+REVEAL_PLUGINS: (markdown notes)
+#+REVEAL_ROOT: http://cdn.jsdelivr.net/reveal.js/3.0.0
+
+* Demo
+#+begin_notes
+echo '{ "name": "my_check", "output": "some output", "status": 0 }' > /dev/tcp/localhost/3030
+wget -O /etc/sensu/plugins/check-procs.rb https://raw.githubusercontent.com/sensu-plugins/sensu-plugins-process-checks/master/bin/check-process.rb
+#+end_notes
+#+ATTR_REVEAL: :frag (appear)
+  - Vagrant
+    [[https://www.vagrantup.com/downloads.html]]
+*** [[https://github.com/sensu/sensu-puppet][Your own sensu]]
+#+begin_src sh
+$ git clone https://github.com/sensu/sensu-puppet.git 
+$ vagrant up
+$ vagrant status
+$ vagrant ssh sensu-server
+#+end_src
+# *** Vagrant File
+#   #+begin_src ruby
+#     VAGRANTFILE_API_VERSION = "2"
+#     Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+#       config.vm.synced_folder "../", "/vagrant_data" # Mount directory up a level so puppet module list can find modules
+#       config.vm.synced_folder ".", "/vagrant"
+#       config.vm.provider :virtualbox do |vb|
+#         vb.customize ["modifyvm", :id, "--memory", "512"]
+#       end
+
+#       config.vm.define "sensu-server", primary: true, autostart: true do |server|
+#         server.vm.box = "ubuntu/trusty64"
+#         server.vm.hostname = 'sensu-server.example.com'
+#         server.vm.network :private_network, ip: "192.168.56.10"
+#         server.vm.provision :shell, :path => "tests/provision_server.sh"
+#         server.vm.provision :puppet, :manifests_path => ["vm","/vagrant/tests"], :manifest_file => "rabbitmq.pp", :options => "--hiera_config /etc/hiera.yaml"
+#         server.vm.provision :puppet, :manifests_path => ["vm","/vagrant/tests"], :manifest_file => "sensu-server.pp", :options => "--hiera_config /etc/hiera.yaml"
+#         server.vm.provision :puppet, :manifests_path => ["vm","/vagrant/tests"], :manifest_file => "uchiwa.pp", :options => "--hiera_config /etc/hiera.yaml"
+#         server.vm.provision :shell, :path => "tests/rabbitmq.sh"
+#       end
+
+#       config.vm.define "sensu-client", autostart: true do |client|
+#         client.vm.box = "ubuntu/trusty64"
+#         client.vm.hostname = 'sensu-client.example.com'
+#         client.vm.network  :private_network, ip: "192.168.56.11"
+#         client.vm.provision :shell, :path => "tests/provision_client.sh"
+#         client.vm.provision :puppet, :manifests_path => ["vm","/vagrant/tests"], :manifest_file => "sensu-client.pp", :options => "--hiera_config /etc/hiera.yaml"
+#       end
+#     end                             # 
+# #+end_src
+*** Go figure!
+   - sensu-server.example.com:3000
+   - username => uchiwa
+   - password => uchiwa
+     
+* [[https://sensuapp.org/docs/latest/overview][Sensu and all]]
+*** Overview
+    #+ATTR_REVEAL: :frag (none )
+   - To *Monitor* servers, services, application health, and business KPIs
+   - Send *alerts* and *notifications*
+   - *Dynamic* client registration & de-registration
+   - A simple yet *extensible* model for monitoring
+   - Designed for *automation* (json)
+   - *Open source* software with commercial support
+*** Community
+    - [[https://github.com/sensu/sensu][Sensu on Github]]
+    - [[https://github.com/sensu-plugins][Sensu-plugins]]
+
+* Core sensu components
+*** [[https://sensuapp.org/docs/latest/architecture][Architecture]]
+    [[https://sensuapp.org/docs/latest/img/sensu-diagram-87a902f0.gif]]
+** [[https://sensuapp.org/docs/latest/configuration][Server]]
+    #+ATTR_REVEAL: :frag (none )
+    - event processor
+    - built-in leader election to avoid scheduling conflict 
+    - round-robin load balancing
+    - Process check results
+    - maintain state in redis (aggregate)
+** [[https://sensuapp.org/docs/latest/clients][Client]]
+    #+ATTR_REVEAL: :frag (none )
+    - dynamic self-registration
+    - client subscriptions
+    - local check execution scheduler
+    - input socket for accepting input from external services
+** [[https://sensuapp.org/docs/latest/transport][Transport]]
+    #+ATTR_REVEAL: :frag (none )
+    - RabbitMQ
+    - Redis
+** [[https://sensuapp.org/docs/latest/api-overview][API]]
+#+begin_notes
+http://sensu-server.example.com:4567/clients
+http://sensu-server.exaple.com:4567/clients/sensu-client.example.com
+#+end_notes
+  #+ATTR_REVEAL: :frag (none )
+    - Adding/removing clients
+    - Access check configuration data and publishing check requests
+    - Accessing event data and resolving events
+    - Accessing check result data and publishing check results
+    - An Aggregates API for accessing aggregated check result data and deleting aggregate data
+    - A Stashes API for providing read/write access to Redis’ underlying key-value functionality
+*** [[https://sensuapp.org/docs/latest/install-a-dashboard][Dashboard (Not a core component)]]
+  #+ATTR_REVEAL: :frag (grow )
+    - sensu-admin (discontinued)
+    - uchiwa
+** [[https://sensuapp.org/docs/latest/architecture][The Sensu Monitoring Flow]]
+    #+ATTR_REVEAL: :frag (none )
+  - A *Check Request* is scheduled/published by the *Sensu Server* or a *Sensu Client*
+  - The *Sensu Client* executes a *Service Check*
+  - *Service Checks* emit status information as *Check Results*
+  - *Check Results* are published by the Sensu Client to the *Sensu Transport*
+  - The *Sensu Server* processes Check Results, persisting a copy of the latest result in the Data Store
+  - The *Sensu Server* processes the Event by executing one or more *Event Handlers*
+  - The *Sensu Server* executes the *Event Handler*
+
+* [[https://sensuapp.org/docs/latest/checks][Checks]]
+    #+ATTR_REVEAL: :frag (grow )
+    Sensu checks allow you to monitor services or measure resources, they are executed on machines running the Sensu client.
+*** Definition
+  #+begin_src ruby
+{
+  "checks": {
+    "web_application_api": {
+      "command": "check-http.rb -u http://localhost/health-check",
+      "subscribers": [
+        "webserver"
+      ],
+      "interval": 20
+      "standalone": false
+    }
+  }
+}
+#+end_src
+*** NTP check  
+  #+begin_src python
+  {
+  "checks": {
+  "ntp": {
+  "command": "/usr/share/ola/sensu/plugins/system/check-ntp.rb -c 100 -w50 ",
+  "handlers": [
+  "default"
+  ],
+  "interval": 60,
+  "subscribers": [
+  "base"
+  ],
+  "standalone": false
+  }
+  }
+  }
+#+end_src
+*** Metric check
+  #+begin_src js
+  {
+  "checks": {
+  "cpu_metrics": {
+  "type": "metric",
+  "command": "metrics-cpu.rb",
+  "subscribers": [
+  "production"
+  ],
+  "interval": 10,
+  "handler": "graylog"
+  }
+  }
+  }
+#+end_src
+*** Standalone check...
+#+begin_src ruby
+'uchiwa': {
+  include ola-sensu::uchiwa
+  include ola-sensu::checks::uchiwa
+}
+#+end_src
+
+*** Check pushed from puppet
+#+begin_src ruby
+  sensu::check { 'check_ntp':
+    command     => 'PATH=$PATH:/usr/lib/nagios/plugins check_ntp_time -H pool.ntp.org -w 30 -c 60',
+    handlers    => 'email, opsgenie',
+    subscribers => 'sensu-test'
+  }
+#+end_src
+*** Power!
+    #+begin_src js
+    echo '{ "name": "my_check", "output": "some output", "status": 0 }' > /dev/tcp/localhost/3030
+    #+end_src
+*** Write your own plugin
+#+begin_src ruby
+#!/usr/bin/env ruby
+# FILE_NAME check_proc.rb
+
+# get the current list of processes
+processes = `ps aux`
+
+# determine if the resque process is running
+running = processes.lines.detect do |process|
+  process.include?('resque-pool')
+end
+
+# return appropriate check output and exit status code
+if running
+  puts 'OK - Resque process is running'
+  exit 0
+else
+  puts 'WARNING - Resque process is NOT running'
+  exit 1
+end
+
+#status codes: 0 => OK, 1 => WARNING, 2 => CRITICAL, and 3+ => UNKNOWN or CUSTOM
+
+#+end_src
+
+* [[https://sensuapp.org/docs/latest/handlers][Handlers]]
+  #+ATTR_REVEAL: :frag (grow)
+  Sensu event handlers are for taking action on events 
+*** Definition
+    #+ATTR_REVEAL: :frag (grow)
+    A definition declares how a Sensu handler is executed
+#+begin_src js
+{
+  "handlers": {
+    "mail": {
+      "type": "pipe",
+      "command": "mailx -s 'Where is God?' god@example.com"
+    }
+  }
+}
+#+end_src
+
+*** Handler types
+    - *Pipe handlers* execute a command and pass the event data to the created process via STDIN.
+    - *TCP and UDP* handlers send the event data to a remote socket.
+    - *Transport* handlers publish the event data to the Sensu transport
+    - *Set* handlers are used to group event handlers
+
+* from.here()
+  #+ATTR_REVEAL: :frag (none appear)
+  - [[https://sensuapp.org/docs/latest/overview][Sensu documentation]]
+  - Follow me on [[https://twitter.com/abdulkarim_me][twitter]] [[https://github.com/techmaniack][Github]]
